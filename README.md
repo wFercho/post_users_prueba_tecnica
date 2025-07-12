@@ -62,7 +62,7 @@ DEBUG=False
 ## ▶️ Cómo iniciar
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 Una vez levantado el entorno, accede a:
