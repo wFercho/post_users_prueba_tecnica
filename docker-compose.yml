@@ -1,0 +1,82 @@
+services:
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - users-microservice
+      - posts-microservice
+    networks:
+      - internal-net
+
+  users-microservice:
+    build:
+      context: .
+      dockerfile: users/Dockerfile
+    container_name: users-microservice
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - app-postgres
+      - users-redis
+    volumes:
+      - .:/app
+    networks:
+      - internal-net
+    command: uvicorn users.main:app --host 0.0.0.0 --port 8000 --reload
+
+  app-postgres:
+    image: postgres:15
+    container_name: app-postgres
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal-net
+
+  users-redis:
+    container_name: users-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal-net
+
+  posts-microservice:
+    build:
+      context: .
+      dockerfile: posts/Dockerfile
+    container_name: posts-microservice
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    depends_on:
+      - app-postgres
+      - users-microservice
+    networks:
+      - internal-net
+    command: uvicorn posts.main:app --host 0.0.0.0 --port 8001 --reload
+
+
+volumes:
+  pgdata:
+  redis_data:
+
+networks:
+  internal-net:
+    driver: bridge
