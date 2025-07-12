@@ -7,10 +7,13 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - users-microservice
-      - posts-microservice
+      users-microservice:
+        condition: service_healthy
+      posts-microservice:
+        condition: service_healthy
     networks:
       - internal-net
+    restart: unless-stopped
 
   users-microservice:
     build:
@@ -22,13 +25,22 @@ services:
     env_file:
       - .env
     depends_on:
-      - app-postgres
-      - users-redis
+      app-postgres:
+        condition: service_healthy
+      users-redis:
+        condition: service_healthy
     volumes:
       - .:/app
     networks:
       - internal-net
     command: uvicorn users.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
   app-postgres:
     image: postgres:15
@@ -45,6 +57,13 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   users-redis:
     container_name: users-redis
@@ -55,6 +74,13 @@ services:
       - redis_data:/data
     networks:
       - internal-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
   posts-microservice:
     build:
@@ -66,12 +92,20 @@ services:
     env_file:
       - .env
     depends_on:
-      - app-postgres
-      - users-microservice
+      app-postgres:
+        condition: service_healthy
+      users-microservice:
+        condition: service_healthy
     networks:
       - internal-net
     command: uvicorn posts.main:app --host 0.0.0.0 --port 8001 --reload
-
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
 volumes:
   pgdata:
