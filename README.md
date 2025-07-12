@@ -11,6 +11,9 @@ Este proyecto implementa una arquitectura basada en microservicios con:
 
 ---
 
+## Diagrama de dependencia entre componentes
+![](dependecy-diagram.svg)
+
 ## 📥 Clonación del Repositorio
 
 Primero, clona este repositorio:
@@ -122,3 +125,5 @@ Todos los servicios se comunican a través de una red Docker llamada `internal-n
 
 - Puedes usar nombres de servicio como `http://users-microservice:8000` para comunicar los microservicios internamente.
 - Desde el frontend, en desarrollo local, asegúrate de apuntar a `http://localhost:8000` o `8001` según el microservicio.
+
+
