@@ -7,13 +7,10 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      users-microservice:
-        condition: service_healthy
-      posts-microservice:
-        condition: service_healthy
+      - users-microservice
+      - posts-microservice
     networks:
       - internal-net
-    restart: unless-stopped
 
   users-microservice:
     build:
@@ -35,12 +32,12 @@ services:
       - internal-net
     command: uvicorn users.main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
 
   app-postgres:
     image: postgres:15
@@ -59,11 +56,9 @@ services:
       - internal-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
       retries: 5
-      start_period: 30s
-    restart: unless-stopped
+      timeout: 3s
 
   users-redis:
     container_name: users-redis
@@ -76,11 +71,10 @@ services:
       - internal-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 5s
+      timeout: 3s
+      retries: 5
       start_period: 10s
-    restart: unless-stopped
 
   posts-microservice:
     build:
@@ -100,12 +94,11 @@ services:
       - internal-net
     command: uvicorn posts.main:app --host 0.0.0.0 --port 8001 --reload
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=5)"]
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
+      retries: 5
+      start_period: 45s
 
 volumes:
   pgdata:
